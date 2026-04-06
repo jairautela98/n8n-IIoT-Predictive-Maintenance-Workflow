@@ -179,7 +179,38 @@ Once the controller receives this JSON, it performs the following:
     Technology: Using timeout_ms prevents the actuator from getting stuck in a loop if it encounters mechanical resistance.
 
     Timeline: By sending a command_id, we can track exactly how many milliseconds elapsed between "Leak Detected" and "Valve Closed."
-    
+{
+  "nodes": [
+    {
+      "parameters": { "topic": "pipeline/joint1/sensors" },
+      "name": "MQTT Trigger",
+      "type": "n8n-nodes-base.mqttTrigger",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "command": "python3 leak_pred.py '{{JSON.stringify($json)}}'"
+      },
+      "name": "Run Prediction",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [{ "value1": "={{$json.leak_detected}}", "value2": true }]
+        }
+      },
+      "name": "Is Leak?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "MQTT Trigger": { "main": [[{ "node": "Run Prediction", "index": 0 }]] },
+    "Run Prediction": { "main": [[{ "node": "Is Leak?", "index": 0 }]] }
+  }
+}
 
 
 
